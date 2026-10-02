@@ -1,21 +1,28 @@
-import { HashRouter, Route, Routes } from 'react-router-dom'
+import { HashRouter, Outlet, Route, Routes } from 'react-router-dom'
+import { AppShell } from './components/AppShell'
+import { ToastProvider } from './components/Toast'
+import More from './pages/More'
+import NotFound from './pages/NotFound'
 
-// Placeholder until the app shell and pages are added.
-function Placeholder() {
+function ShellLayout() {
   return (
-    <main>
-      <h1>Negócio Pronto</h1>
-      <p>A aplicação está a ser preparada.</p>
-    </main>
+    <AppShell>
+      <Outlet />
+    </AppShell>
   )
 }
 
 export default function App() {
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="*" element={<Placeholder />} />
-      </Routes>
-    </HashRouter>
+    <ToastProvider>
+      <HashRouter>
+        <Routes>
+          <Route element={<ShellLayout />}>
+            <Route path="/mais" element={<More />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+      </HashRouter>
+    </ToastProvider>
   )
 }

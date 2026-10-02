@@ -1,0 +1,71 @@
+.aviso-regiao {
+  position: fixed;
+  z-index: 60;
+  right: var(--esp-4);
+  bottom: var(--esp-4);
+  left: var(--esp-4);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  max-width: 34rem;
+  padding: var(--esp-1) var(--esp-1) var(--esp-1) var(--esp-4);
+  background: var(--tinta);
+  border-left: 4px solid var(--sucesso-claro);
+  border-radius: var(--raio-sm);
+  box-shadow: var(--sombra);
+  color: var(--branco);
+  pointer-events: auto;
+  animation: aviso-entrar var(--transicao);
+}
+
+.aviso--erro {
+  background: var(--erro);
+  border-left-color: var(--erro-claro);
+}
+
+.aviso__texto {
+  padding-block: var(--esp-2);
+  font-weight: 500;
+}
+
+.aviso__fechar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--alvo-toque);
+  height: var(--alvo-toque);
+  background: transparent;
+  border: 0;
+  border-radius: var(--raio-sm);
+  color: inherit;
+}
+
+.aviso__fechar:focus-visible {
+  outline-color: var(--branco);
+}
+
+.aviso__fechar svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+@keyframes aviso-entrar {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+/* Under 768px the toast sits above the bottom bar. */
+@media (max-width: 767px) {
+  .aviso-regiao {
+    bottom: calc(var(--altura-barra-inferior) + env(safe-area-inset-bottom, 0px) + var(--esp-3));
+  }
+}

@@ -1,0 +1,35 @@
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+  padding: 0.125rem var(--esp-2);
+  border: 1px solid transparent;
+  border-radius: var(--raio-sm);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.etiqueta--neutra {
+  background: var(--papel);
+  border-color: var(--linha);
+  color: var(--tinta);
+}
+
+.etiqueta--destaque {
+  background: var(--azulejo-claro);
+  color: var(--azulejo-escuro);
+}
+
+.etiqueta--sucesso {
+  background: var(--sucesso-claro);
+  color: var(--sucesso);
+}
+
+.etiqueta--apagada {
+  background: transparent;
+  border-color: var(--pedra);
+  border-style: dashed;
+  color: var(--pedra);
+}

@@ -1,0 +1,65 @@
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  min-height: var(--alvo-toque);
+  padding: var(--esp-2) var(--esp-4);
+  border: 1px solid transparent;
+  border-radius: var(--raio-sm);
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color var(--transicao), border-color var(--transicao), color var(--transicao);
+}
+
+.botao svg {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.botao:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.botao--primario {
+  background: var(--azulejo);
+  color: var(--branco);
+}
+
+.botao--primario:hover:not(:disabled) {
+  background: var(--azulejo-escuro);
+}
+
+.botao--secundario {
+  background: var(--branco);
+  border-color: var(--tinta);
+  color: var(--tinta);
+}
+
+.botao--secundario:hover:not(:disabled) {
+  background: var(--papel);
+}
+
+.botao--discreto {
+  background: transparent;
+  color: var(--azulejo);
+  padding-inline: var(--esp-3);
+}
+
+.botao--discreto:hover:not(:disabled) {
+  background: var(--azulejo-claro);
+}
+
+.botao--perigo {
+  background: var(--branco);
+  border-color: var(--erro);
+  color: var(--erro);
+}
+
+.botao--perigo:hover:not(:disabled) {
+  background: var(--erro-claro);
+}

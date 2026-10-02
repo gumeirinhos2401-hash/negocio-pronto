@@ -9,6 +9,12 @@
   --erro: #B42318;
   --sucesso: #1F7A4D;
 
+  /* Tints and shades of the tokens above, for hover and state backgrounds */
+  --azulejo-escuro: #153C8C;
+  --azulejo-claro: #E8EEF9;
+  --erro-claro: #FBECEA;
+  --sucesso-claro: #E6F2EC;
+
   /* Type */
   --fonte-titulos: 'Bricolage Grotesque Variable', 'Segoe UI', system-ui, sans-serif;
   --fonte-texto: 'Instrument Sans Variable', 'Segoe UI', system-ui, sans-serif;
@@ -39,6 +45,8 @@
   --sombra: 0 1px 2px rgb(24 32 43 / 0.06), 0 8px 24px rgb(24 32 43 / 0.08);
   --alvo-toque: 44px;
   --largura-conteudo: 68rem;
+  --largura-leitura: 40rem;
+  --altura-barra-inferior: 4rem;
 
   /* Motion, used only in response to a user action */
   --transicao: 160ms ease-out;

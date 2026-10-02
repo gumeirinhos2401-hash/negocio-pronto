@@ -1,0 +1,12 @@
+.cartao {
+  padding: var(--esp-5);
+  background: var(--branco);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+}
+
+@media (max-width: 479px) {
+  .cartao {
+    padding: var(--esp-4);
+  }
+}

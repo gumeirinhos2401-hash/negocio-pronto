@@ -1,0 +1,31 @@
+.vazio {
+  max-width: var(--largura-leitura);
+  padding: var(--esp-5) 0 var(--esp-5) var(--esp-5);
+  border-left: 3px solid var(--azulejo);
+}
+
+.vazio__titulo {
+  font-size: var(--texto-xl);
+}
+
+.vazio__texto {
+  margin-top: var(--esp-2);
+  color: var(--pedra);
+}
+
+.vazio__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-3);
+  margin-top: var(--esp-5);
+}
+
+@media (max-width: 479px) {
+  .vazio {
+    padding-left: var(--esp-4);
+  }
+
+  .vazio__acoes .botao {
+    width: 100%;
+  }
+}

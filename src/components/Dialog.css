@@ -1,0 +1,90 @@
+.dialogo {
+  width: min(32rem, calc(100vw - 2 * var(--esp-4)));
+  max-height: calc(100dvh - 2 * var(--esp-4));
+  padding: 0;
+  background: var(--branco);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  color: var(--tinta);
+}
+
+.dialogo[open] {
+  animation: dialogo-abrir var(--transicao);
+}
+
+.dialogo::backdrop {
+  background: rgb(24 32 43 / 0.55);
+}
+
+.dialogo__caixa {
+  padding: var(--esp-5);
+}
+
+.dialogo__topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--esp-3);
+}
+
+.dialogo__titulo {
+  padding-top: var(--esp-2);
+  font-size: var(--texto-xl);
+}
+
+.dialogo__fechar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--alvo-toque);
+  height: var(--alvo-toque);
+  margin: calc(-1 * var(--esp-2)) calc(-1 * var(--esp-2)) 0 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--raio-sm);
+  color: var(--pedra);
+}
+
+.dialogo__fechar:hover {
+  background: var(--papel);
+  color: var(--tinta);
+}
+
+.dialogo__fechar svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.dialogo__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  margin-top: var(--esp-3);
+}
+
+.dialogo__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--esp-3);
+  margin-top: var(--esp-2);
+}
+
+@keyframes dialogo-abrir {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+@media (max-width: 479px) {
+  .dialogo__caixa {
+    padding: var(--esp-4);
+  }
+
+  .dialogo__acoes .botao {
+    flex: 1 1 100%;
+  }
+}

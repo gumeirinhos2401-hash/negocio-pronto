@@ -1,0 +1,77 @@
+.saltar {
+  position: absolute;
+  z-index: 70;
+  top: var(--esp-2);
+  left: var(--esp-2);
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--branco);
+  border: 2px solid var(--azulejo);
+  border-radius: var(--raio-sm);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+
+.saltar:focus {
+  transform: none;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app__topo {
+  background: var(--branco);
+  border-bottom: 1px solid var(--linha);
+}
+
+.app__topo-interior {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: var(--esp-5);
+  max-width: var(--largura-conteudo);
+  min-height: 3.5rem;
+  margin-inline: auto;
+  padding-inline: var(--esp-4);
+}
+
+.app__marca {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--alvo-toque);
+  color: var(--tinta);
+  font-family: var(--fonte-titulos);
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.app__conteudo {
+  flex: 1;
+  /* Leaves room for the fixed bottom bar, including the phone's home indicator. */
+  padding: var(--esp-5) var(--esp-4) calc(var(--altura-barra-inferior) + env(safe-area-inset-bottom, 0px) + var(--esp-6));
+}
+
+.app__conteudo:focus {
+  outline: none;
+}
+
+.app__pagina {
+  max-width: var(--largura-conteudo);
+  margin-inline: auto;
+}
+
+@media (min-width: 768px) {
+  .app__topo-interior {
+    padding-inline: var(--esp-5);
+  }
+
+  .app__conteudo {
+    padding: var(--esp-7) var(--esp-5) var(--esp-8);
+  }
+}
