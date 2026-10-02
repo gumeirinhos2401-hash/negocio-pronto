@@ -1,0 +1,146 @@
+/* A sheet of paper: white, square corners, lifted off the page. */
+.orcamento-doc {
+  width: 100%;
+  max-width: 40rem;
+  background: var(--branco);
+  box-shadow: 0 0 0 1px var(--linha), var(--sombra);
+  color: var(--tinta);
+  font-size: var(--texto-sm);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.orcamento-doc__folha {
+  padding: var(--esp-5) var(--esp-4) var(--esp-5);
+}
+
+@media (min-width: 600px) {
+  .orcamento-doc__folha {
+    padding: var(--esp-6) var(--esp-7) var(--esp-6);
+  }
+}
+
+.orcamento-doc__topo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--esp-4) var(--esp-5);
+}
+
+.orcamento-doc__negocio {
+  flex: 1 1 12rem;
+  min-width: 0;
+  color: var(--pedra);
+}
+
+.orcamento-doc__negocio a {
+  color: inherit;
+}
+
+.orcamento-doc__nome {
+  margin-bottom: var(--esp-1);
+  color: var(--tinta);
+  font-family: var(--fonte-titulos);
+  font-size: var(--texto-xl);
+  font-weight: 700;
+  line-height: var(--altura-linha-titulos);
+}
+
+.orcamento-doc__ref {
+  color: var(--pedra);
+}
+
+@media (min-width: 600px) {
+  .orcamento-doc__ref {
+    text-align: right;
+  }
+}
+
+.orcamento-doc__titulo {
+  color: var(--tinta);
+  font-family: var(--fonte-titulos);
+  font-size: var(--texto-2xl);
+  font-weight: 700;
+  line-height: var(--altura-linha-titulos);
+}
+
+.orcamento-doc__regra {
+  height: 3px;
+  margin-block: var(--esp-5);
+}
+
+.orcamento-doc__rotulo {
+  color: var(--pedra);
+  font-size: var(--texto-xs);
+}
+
+.orcamento-doc__cliente-nome {
+  font-size: var(--texto-lg);
+  font-weight: 600;
+}
+
+.orcamento-doc__tabela {
+  width: 100%;
+  margin-top: var(--esp-5);
+  border-collapse: collapse;
+  font-size: var(--texto-base);
+}
+
+.orcamento-doc__tabela th,
+.orcamento-doc__tabela td {
+  padding: var(--esp-3) 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.orcamento-doc__tabela thead th {
+  padding-block: var(--esp-2);
+  border-bottom: 1px solid var(--tinta);
+  color: var(--pedra);
+  font-size: var(--texto-xs);
+  font-weight: 500;
+}
+
+.orcamento-doc__tabela tbody td {
+  border-bottom: 1px solid var(--linha);
+}
+
+.orcamento-doc__tabela tfoot th,
+.orcamento-doc__tabela tfoot td {
+  padding-top: var(--esp-4);
+  font-family: var(--fonte-titulos);
+  font-size: var(--texto-xl);
+  font-weight: 700;
+}
+
+.orcamento-doc__tabela .orcamento-doc__valor {
+  padding-left: var(--esp-4);
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.orcamento-doc__tabela .orcamento-doc__sem-linhas {
+  color: var(--pedra);
+}
+
+.orcamento-doc__iva {
+  color: var(--pedra);
+  text-align: right;
+}
+
+.orcamento-doc__bloco {
+  margin-top: var(--esp-5);
+}
+
+.orcamento-doc__notas {
+  white-space: pre-wrap;
+}
+
+.orcamento-doc__rodape {
+  margin-top: var(--esp-6);
+  padding-top: var(--esp-3);
+  border-top: 1px solid var(--linha);
+  color: var(--pedra);
+  font-size: var(--texto-xs);
+}

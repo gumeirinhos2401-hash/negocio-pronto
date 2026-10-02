@@ -1,0 +1,22 @@
+.respostas__seccao {
+  display: grid;
+  gap: var(--esp-4);
+}
+
+@media (min-width: 900px) {
+  .respostas__seccao {
+    grid-template-columns: 16rem minmax(0, 36rem);
+    gap: var(--esp-7);
+  }
+}
+
+.respostas__estado {
+  margin-top: var(--esp-3);
+}
+
+.respostas__falta {
+  margin-top: var(--esp-3);
+  padding-left: var(--esp-3);
+  border-left: 3px solid var(--azulejo);
+  font-size: var(--texto-sm);
+}

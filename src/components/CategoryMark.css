@@ -1,0 +1,5 @@
+.marca-categoria {
+  display: inline-block;
+  flex: none;
+  fill: var(--azulejo);
+}

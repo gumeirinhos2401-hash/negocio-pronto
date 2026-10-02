@@ -1,0 +1,45 @@
+/* Printing a page that holds a quote document prints only that document. */
+@media print {
+  body {
+    background: #FFFFFF;
+  }
+
+  .saltar,
+  .app__topo,
+  .nav-fundo,
+  .aviso-regiao {
+    display: none !important;
+  }
+
+  .app__conteudo {
+    padding: 0;
+  }
+
+  body:has(.so-impressao) * {
+    visibility: hidden;
+  }
+
+  body:has(.so-impressao) .so-impressao,
+  body:has(.so-impressao) .so-impressao * {
+    visibility: visible;
+  }
+
+  .orcamentos__previa {
+    position: static;
+  }
+
+  .so-impressao {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  .so-impressao .orcamento-doc {
+    max-width: none;
+    box-shadow: none;
+    /* Keeps the tile band and the colored rule when the browser drops backgrounds. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

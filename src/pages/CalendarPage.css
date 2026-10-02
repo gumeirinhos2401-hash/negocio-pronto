@@ -1,0 +1,304 @@
+.calendario__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+}
+
+.calendario__mes {
+  font-size: var(--texto-2xl);
+}
+
+.calendario__mes:focus {
+  outline: none;
+}
+
+.calendario__navegar {
+  display: flex;
+  gap: var(--esp-2);
+}
+
+.calendario__acoes {
+  margin-block: var(--esp-4) var(--esp-5);
+}
+
+.calendario__vazio {
+  margin-bottom: var(--esp-5);
+}
+
+/* Under 768px: a list with one row per day. */
+.calendario__semana {
+  display: none;
+}
+
+.calendario__grelha {
+  border-top: 1px solid var(--linha);
+}
+
+.calendario__dia {
+  padding-block: var(--esp-1);
+  border-bottom: 1px solid var(--linha);
+}
+
+.calendario__dia--fora {
+  display: none;
+}
+
+.calendario__dia-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2);
+}
+
+.calendario__data {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  font-weight: 600;
+}
+
+.calendario__dia-semana {
+  color: var(--pedra);
+  font-weight: 400;
+}
+
+.calendario__hoje {
+  padding: 0 var(--esp-2);
+  background: var(--azulejo);
+  border-radius: var(--raio-sm);
+  color: var(--branco);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.calendario__mais {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--alvo-toque);
+  height: var(--alvo-toque);
+  background: transparent;
+  border: 0;
+  border-radius: var(--raio-sm);
+  color: var(--pedra);
+}
+
+.calendario__mais:hover {
+  background: var(--azulejo-claro);
+  color: var(--azulejo);
+}
+
+.calendario__mais svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.calendario__entradas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  padding-bottom: var(--esp-2);
+}
+
+.calendario__entrada {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  width: 100%;
+  min-height: var(--alvo-toque);
+  padding: var(--esp-2) var(--esp-3);
+  background: var(--branco);
+  border: 1px solid var(--linha);
+  border-left: 3px solid var(--azulejo);
+  border-radius: var(--raio-sm);
+  line-height: 1.35;
+  text-align: left;
+}
+
+.calendario__entrada:hover {
+  border-color: var(--azulejo);
+}
+
+.calendario__categoria {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  color: var(--pedra);
+  font-size: var(--texto-xs);
+}
+
+.calendario__titulo {
+  overflow-wrap: anywhere;
+}
+
+.calendario__estado {
+  color: var(--azulejo-escuro);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.calendario__entrada--publicada {
+  border-left-color: var(--sucesso);
+}
+
+.calendario__entrada--publicada .calendario__estado {
+  color: var(--sucesso);
+}
+
+.calendario__entrada--cancelada {
+  background: transparent;
+  border-left-color: var(--pedra);
+  border-left-style: dashed;
+}
+
+.calendario__entrada--cancelada .calendario__titulo {
+  color: var(--pedra);
+  text-decoration: line-through;
+}
+
+.calendario__entrada--cancelada .calendario__estado {
+  color: var(--pedra);
+}
+
+.calendario__aviso {
+  max-width: var(--largura-leitura);
+  margin-top: var(--esp-4);
+  color: var(--pedra);
+}
+
+.calendario__legenda {
+  margin-top: var(--esp-5);
+}
+
+.calendario__legenda-titulo {
+  font-family: var(--fonte-texto);
+  font-size: var(--texto-base);
+  font-weight: 600;
+}
+
+.calendario__legenda ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2) var(--esp-5);
+  margin-top: var(--esp-2);
+}
+
+.calendario__legenda li {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+@media (max-width: 479px) {
+  .calendario__navegar {
+    width: 100%;
+  }
+
+  .calendario__navegar .botao {
+    flex: 1;
+    padding-inline: var(--esp-2);
+  }
+}
+
+/* From 768px: a month grid, Monday first. */
+@media (min-width: 768px) {
+  .calendario__semana,
+  .calendario__grelha {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .calendario__semana {
+    padding-bottom: var(--esp-2);
+    color: var(--pedra);
+    font-size: var(--texto-sm);
+    font-weight: 500;
+  }
+
+  .calendario__semana span {
+    padding-left: var(--esp-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calendario__grelha {
+    background: var(--branco);
+    border-top: 1px solid var(--tinta);
+    border-left: 1px solid var(--linha);
+  }
+
+  .calendario__dia,
+  .calendario__dia--fora {
+    display: block;
+    min-height: 8rem;
+    padding: 0 var(--esp-1) var(--esp-1);
+    border-right: 1px solid var(--linha);
+  }
+
+  .calendario__dia--fora {
+    background: var(--papel);
+  }
+
+  .calendario__dia--hoje {
+    box-shadow: inset 0 3px 0 var(--azulejo);
+  }
+
+  .calendario__data {
+    padding-left: var(--esp-1);
+  }
+
+  .calendario__dia-semana {
+    display: none;
+  }
+
+  /* No room for the "Hoje" label in a cell: the number is filled instead and the label stays for screen readers. */
+  .calendario__hoje {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .calendario__dia--hoje .calendario__numero {
+    display: inline-block;
+    min-width: 1.75rem;
+    padding: 0 var(--esp-1);
+    background: var(--azulejo);
+    border-radius: var(--raio-sm);
+    color: var(--branco);
+    text-align: center;
+  }
+
+  .calendario__entradas {
+    gap: var(--esp-1);
+    padding-bottom: 0;
+  }
+
+  .calendario__entrada {
+    padding: var(--esp-1) var(--esp-2);
+    font-size: var(--texto-sm);
+  }
+
+  /* The cell is narrow: the shape stands for the category, and the legend below names it. */
+  .calendario__categoria-nome {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .calendario__titulo {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+}
