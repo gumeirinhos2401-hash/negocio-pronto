@@ -1,16 +1,25 @@
+import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { beforeEach, expect, test } from 'vitest';
+import { afterAll, beforeAll, beforeEach, expect, test } from 'vitest';
 import { buildApp } from '../src/app';
-import { openDb, type Db } from '../src/db';
+import { openEmbedded, type Db } from '../src/db';
+import type { Message } from '../src/mail';
 
 let app: FastifyInstance;
 let db: Db;
 let clock: Date;
+let outbox: Message[];
+
+const mailer = { send: async (message: Message) => { outbox.push(message); } };
+
+beforeAll(async () => { db = await openEmbedded(); });
+afterAll(async () => { await db.close(); });
 
 beforeEach(async () => {
+  await db.query('TRUNCATE users, rate_limits CASCADE');
   clock = new Date('2026-10-15T10:00:00Z');
-  db = openDb(':memory:');
-  app = await buildApp({ db, now: () => clock });
+  outbox = [];
+  app = await buildApp({ db, mailer, now: () => clock });
 });
 
 const PASSWORD = 'uma-palavra-passe-longa';
@@ -21,12 +30,21 @@ async function signUp(email: string): Promise<Record<string, string>> {
   return { np_session: response.cookies[0].value };
 }
 
+async function signIn(email: string, password = PASSWORD): Promise<Record<string, string>> {
+  const response = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email, password } });
+  expect(response.statusCode).toBe(200);
+  return { np_session: response.cookies[0].value };
+}
+
 const call = (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, cookies?: Record<string, string>, payload?: object) =>
   app.inject({ method, url, cookies, payload });
 
+const count = async (table: string): Promise<number> => (await db.query(`SELECT COUNT(*)::int AS n FROM ${table}`)).rows[0].n;
+const tokenIn = (message: Message): string => /token=([\w-]+)/.exec(message.text)![1];
+
 const business = {
   name: 'Café Teste', category: 'Café', city: 'Braga', description: '', hours: '', phone: '', email: '', address: '',
-  bookingLink: '', instagram: '', facebook: '', website: '', services: [], accentColor: '#1B4DB1',
+  bookingLink: '', instagram: '', facebook: '', website: '', services: [{ id: 's1', name: 'Bica', priceCents: 80 }], accentColor: '#1B4DB1',
 };
 const post = {
   channel: 'instagram', goal: 'informar', service: 'Pastel de nata', audience: 'quem passa na rua', tone: 'proximo',
@@ -35,16 +53,16 @@ const post = {
 const quote = { clientName: 'Ana', items: [{ description: 'Catering', priceCents: 12050 }, { description: 'Entrega', priceCents: 500 }], deadline: '', notes: '', vatNote: 'nenhuma' };
 const entry = { date: '2026-10-20', category: 'servico', title: 'Apresentar o serviço', status: 'planeada', postId: null };
 
-test('register sets an httpOnly strict cookie and stores only a password hash', async () => {
+test('register sets an httpOnly strict cookie and stores only hashes', async () => {
   const response = await call('POST', '/api/auth/register', undefined, { email: 'Ana@Exemplo.pt', password: PASSWORD });
   expect(response.statusCode).toBe(201);
   expect(response.cookies[0]).toMatchObject({ name: 'np_session', httpOnly: true, sameSite: 'Strict', path: '/' });
-  expect(response.json().user.email).toBe('ana@exemplo.pt');
-  const row = db.prepare('SELECT password_hash FROM users').get() as { password_hash: string };
-  expect(row.password_hash).toMatch(/^scrypt\$/);
-  expect(row.password_hash).not.toContain(PASSWORD);
-  const session = db.prepare('SELECT token_hash FROM sessions').get() as { token_hash: string };
-  expect(session.token_hash).not.toBe(response.cookies[0].value);
+  expect(response.json().user).toMatchObject({ email: 'ana@exemplo.pt', emailVerified: false });
+  const user = (await db.query('SELECT password_hash FROM users')).rows[0];
+  expect(user.password_hash).toMatch(/^scrypt\$/);
+  expect(user.password_hash).not.toContain(PASSWORD);
+  expect((await db.query('SELECT token_hash FROM sessions')).rows[0].token_hash).not.toBe(response.cookies[0].value);
+  expect((await db.query('SELECT token_hash FROM email_tokens')).rows[0].token_hash).not.toBe(tokenIn(outbox[0]));
 });
 
 test('register rejects a duplicate email, a short password and unknown fields', async () => {
@@ -63,22 +81,80 @@ test('login gives the same answer for a wrong password and an unknown email', as
   expect(wrong.statusCode).toBe(401);
   expect(unknown.statusCode).toBe(401);
   expect(wrong.json()).toEqual(unknown.json());
-  const ok = await call('POST', '/api/auth/login', undefined, { email: 'ana@exemplo.pt', password: PASSWORD });
-  expect(ok.statusCode).toBe(200);
-  expect((await call('GET', '/api/me', { np_session: ok.cookies[0].value })).json().user.email).toBe('ana@exemplo.pt');
+  expect((await call('GET', '/api/me', await signIn('ana@exemplo.pt'))).json().user.email).toBe('ana@exemplo.pt');
 });
 
-test('login is rate limited per address', async () => {
-  const attempts = [];
-  for (let i = 0; i < 6; i++) attempts.push((await call('POST', '/api/auth/login', undefined, { email: 'x@exemplo.pt', password: 'errada-errada' })).statusCode);
-  expect(attempts).toEqual([401, 401, 401, 401, 401, 429]);
+test('the login limit is kept in the database, so a restart does not reset it', async () => {
+  const attempt = async () => (await call('POST', '/api/auth/login', undefined, { email: 'x@exemplo.pt', password: 'errada-errada' })).statusCode;
+  const first = [];
+  for (let i = 0; i < 6; i++) first.push(await attempt());
+  expect(first).toEqual([401, 401, 401, 401, 401, 429]);
+  app = await buildApp({ db, mailer, now: () => clock });   // a "restart"
+  expect(await attempt()).toBe(429);
+  clock = new Date(clock.getTime() + 61_000);
+  expect(await attempt()).toBe(401);
+});
+
+test('one account is locked out after ten wrong passwords, whatever the address', async () => {
+  await signUp('ana@exemplo.pt');
+  const codes = [];
+  for (let i = 0; i < 11; i++) {
+    codes.push((await app.inject({ method: 'POST', url: '/api/auth/login', remoteAddress: `10.0.0.${i}`, payload: { email: 'ana@exemplo.pt', password: 'errada-errada' } })).statusCode);
+  }
+  expect(codes.slice(0, 10).every((code) => code === 401)).toBe(true);
+  expect(codes[10]).toBe(429);
+});
+
+test('email confirmation works once and only with a valid link', async () => {
+  const ana = await signUp('ana@exemplo.pt');
+  expect(outbox[0]).toMatchObject({ to: 'ana@exemplo.pt' });
+  expect(outbox[0].text).toContain('http://localhost:5173/#/verificar?token=');
+  const token = tokenIn(outbox[0]);
+  expect((await call('POST', '/api/auth/verify', undefined, { token: 'x'.repeat(43) })).statusCode).toBe(400);
+  expect((await call('POST', '/api/auth/verify', undefined, { token })).statusCode).toBe(204);
+  expect((await call('GET', '/api/me', ana)).json().user.emailVerified).toBe(true);
+  expect((await call('POST', '/api/auth/verify', undefined, { token })).statusCode).toBe(400);
+  expect((await call('POST', '/api/auth/verify/resend', ana)).statusCode).toBe(409);
+});
+
+test('a confirmation link expires and can be sent again', async () => {
+  const ana = await signUp('ana@exemplo.pt');
+  clock = new Date(clock.getTime() + 25 * 60 * 60 * 1000);
+  expect((await call('POST', '/api/auth/verify', undefined, { token: tokenIn(outbox[0]) })).statusCode).toBe(400);
+  expect((await call('POST', '/api/auth/verify/resend', ana)).statusCode).toBe(204);
+  expect((await call('POST', '/api/auth/verify', undefined, { token: tokenIn(outbox[1]) })).statusCode).toBe(204);
+});
+
+test('password reset replaces the password, ends every session and the link works once', async () => {
+  const ana = await signUp('ana@exemplo.pt');
+  expect((await call('POST', '/api/auth/forgot', undefined, { email: 'ninguem@exemplo.pt' })).statusCode).toBe(204);
+  expect(outbox).toHaveLength(1);                                 // only the confirmation mail: nothing for an unknown email
+  expect((await call('POST', '/api/auth/forgot', undefined, { email: 'ana@exemplo.pt' })).statusCode).toBe(204);
+  const token = tokenIn(outbox[1]);
+  expect(outbox[1].text).toContain('/#/repor?token=');
+
+  expect((await call('POST', '/api/auth/reset', undefined, { token, password: 'curta' })).statusCode).toBe(400);
+  expect((await call('POST', '/api/auth/reset', undefined, { token, password: 'outra-palavra-passe' })).statusCode).toBe(204);
+  expect((await call('GET', '/api/me', ana)).statusCode).toBe(401);
+  expect((await call('POST', '/api/auth/login', undefined, { email: 'ana@exemplo.pt', password: PASSWORD })).statusCode).toBe(401);
+  expect((await call('GET', '/api/me', await signIn('ana@exemplo.pt', 'outra-palavra-passe'))).json().user.emailVerified).toBe(true);
+  expect((await call('POST', '/api/auth/reset', undefined, { token, password: 'mais-uma-palavra-passe' })).statusCode).toBe(400);
+});
+
+test('a reset link expires after one hour', async () => {
+  await signUp('ana@exemplo.pt');
+  await call('POST', '/api/auth/forgot', undefined, { email: 'ana@exemplo.pt' });
+  clock = new Date(clock.getTime() + 61 * 60 * 1000);
+  expect((await call('POST', '/api/auth/reset', undefined, { token: tokenIn(outbox[1]), password: 'outra-palavra-passe' })).statusCode).toBe(400);
 });
 
 test('every data route needs a session', async () => {
-  for (const url of ['/api/me', '/api/business', '/api/posts', '/api/calendar', '/api/replies', '/api/quotes', '/api/plan', '/api/export']) {
+  for (const url of ['/api/me', '/api/bootstrap', '/api/business', '/api/posts', '/api/calendar', '/api/replies', '/api/quotes', '/api/plan', '/api/export']) {
     expect((await call('GET', url)).statusCode, url).toBe(401);
   }
   expect((await call('POST', '/api/posts', { np_session: 'inventado' }, post)).statusCode).toBe(401);
+  expect((await call('POST', '/api/demo')).statusCode).toBe(401);
+  expect((await call('DELETE', '/api/data')).statusCode).toBe(401);
 });
 
 test('logout and expiry both end the session', async () => {
@@ -105,7 +181,7 @@ test('business profile is validated and saved', async () => {
   expect(bad.statusCode).toBe(400);
   expect(Object.keys(bad.json().error.fields).sort()).toEqual(['accentColor', 'bookingLink', 'name']);
   expect((await call('PUT', '/api/business', ana, business)).statusCode).toBe(200);
-  expect((await call('GET', '/api/business', ana)).json().business).toMatchObject({ name: 'Café Teste', isExample: false });
+  expect((await call('GET', '/api/business', ana)).json().business).toEqual({ ...business, isExample: false });
 });
 
 test('one account cannot read, change or delete another account\'s data', async () => {
@@ -117,11 +193,8 @@ test('one account cannot read, change or delete another account\'s data', async 
   const quoteId = (await call('POST', '/api/quotes', ana, quote)).json().quote.id;
   const entryId = (await call('POST', '/api/calendar', ana, entry)).json().entry.id;
 
-  expect((await call('GET', '/api/business', bea)).json().business).toBeNull();
-  expect((await call('GET', '/api/posts', bea)).json().posts).toEqual([]);
-  expect((await call('GET', '/api/quotes', bea)).json().quotes).toEqual([]);
-  expect((await call('GET', '/api/calendar', bea)).json().entries).toEqual([]);
-  expect((await call('GET', '/api/replies', bea)).json().overrides).toEqual({});
+  const seen = (await call('GET', '/api/bootstrap', bea)).json();
+  expect(seen).toMatchObject({ business: null, posts: [], entries: [], overrides: {}, quotes: [] });
   expect(JSON.stringify((await call('GET', '/api/export', bea)).json())).not.toContain('Ana');
 
   expect((await call('DELETE', `/api/posts/${postId}`, bea)).statusCode).toBe(404);
@@ -130,25 +203,55 @@ test('one account cannot read, change or delete another account\'s data', async 
   expect((await call('PATCH', `/api/calendar/${entryId}`, bea, { status: 'cancelada' })).statusCode).toBe(404);
   expect((await call('DELETE', `/api/calendar/${entryId}`, bea)).statusCode).toBe(404);
   expect((await call('POST', '/api/calendar', bea, { ...entry, postId })).statusCode).toBe(400);
+  // Reusing another account's id must not overwrite or reveal the record.
+  expect((await call('POST', '/api/posts', bea, { ...post, id: postId })).statusCode).toBe(409);
+  expect((await call('POST', '/api/quotes', bea, { ...quote, id: quoteId })).statusCode).toBe(409);
+  expect((await call('POST', '/api/calendar', bea, { ...entry, id: entryId })).statusCode).toBe(409);
+  await call('DELETE', '/api/data', bea);
 
-  expect((await call('GET', '/api/posts', ana)).json().posts).toHaveLength(1);
-  expect((await call('GET', '/api/quotes', ana)).json().quotes).toHaveLength(1);
-  expect((await call('GET', '/api/calendar', ana)).json().entries[0].status).toBe('planeada');
+  const kept = (await call('GET', '/api/bootstrap', ana)).json();
+  expect(kept.posts).toHaveLength(1);
+  expect(kept.quotes[0].items).toHaveLength(2);
+  expect(kept.entries[0].status).toBe('planeada');
+  expect(kept.overrides).toEqual({ precos: 'Texto da Ana' });
+  expect(kept.business.name).toBe('Café Teste');
 });
 
-test('the free plan stops at five posts a month and the limit is per account', async () => {
+test('a malformed id is a plain 404', async () => {
+  const ana = await signUp('ana@exemplo.pt');
+  expect((await call('DELETE', '/api/posts/nao-e-um-id', ana)).statusCode).toBe(404);
+  expect((await call('PUT', "/api/quotes/1'%20OR%20'1'='1", ana, quote)).statusCode).toBe(404);
+  expect((await call('POST', '/api/posts', ana, { ...post, id: 'x' })).statusCode).toBe(400);
+});
+
+test('the free plan stops at five posts a month and deleting does not give a slot back', async () => {
   const ana = await signUp('ana@exemplo.pt');
   const bea = await signUp('bea@exemplo.pt');
-  for (let i = 0; i < 5; i++) expect((await call('POST', '/api/posts', ana, post)).statusCode).toBe(201);
+  const ids = [];
+  for (let i = 0; i < 5; i++) {
+    const response = await call('POST', '/api/posts', ana, post);
+    expect(response.statusCode).toBe(201);
+    ids.push(response.json().post.id);
+  }
   const sixth = await call('POST', '/api/posts', ana, post);
   expect(sixth.statusCode).toBe(403);
   expect(sixth.json().error.code).toBe('limite-plano');
+  expect((await call('DELETE', `/api/posts/${ids[0]}`, ana)).statusCode).toBe(204);
+  expect((await call('POST', '/api/posts', ana, post)).statusCode).toBe(403);
+  await call('DELETE', '/api/data', ana);
+  expect((await call('POST', '/api/posts', ana, post)).statusCode).toBe(403);
   expect((await call('POST', '/api/posts', bea, post)).statusCode).toBe(201);
   expect((await call('GET', '/api/plan', ana)).json().plan).toMatchObject({ postsUsedThisMonth: 5, freePostLimit: 5, simulated: true });
 
   clock = new Date('2026-11-01T09:00:00Z');                 // the October session has expired by now
-  const login = await call('POST', '/api/auth/login', undefined, { email: 'ana@exemplo.pt', password: PASSWORD });
-  expect((await call('POST', '/api/posts', { np_session: login.cookies[0].value }, post)).statusCode).toBe(201);
+  expect((await call('POST', '/api/posts', await signIn('ana@exemplo.pt'), post)).statusCode).toBe(201);
+});
+
+test('requests at the same time cannot pass the limit together', async () => {
+  const ana = await signUp('ana@exemplo.pt');
+  const codes = (await Promise.all(Array.from({ length: 8 }, () => call('POST', '/api/posts', ana, post)))).map((r) => r.statusCode).sort();
+  expect(codes).toEqual([201, 201, 201, 201, 201, 403, 403, 403]);
+  expect(await count('posts')).toBe(5);
 });
 
 test('the month follows the clock in Portugal', async () => {
@@ -162,7 +265,7 @@ test('the month follows the clock in Portugal', async () => {
 });
 
 test('the simulated trial lifts the limit for seven days and can be used once', async () => {
-  const ana = await signUp('ana@exemplo.pt');
+  let ana = await signUp('ana@exemplo.pt');
   for (let i = 0; i < 5; i++) await call('POST', '/api/posts', ana, post);
   const trial = await call('POST', '/api/plan/trial', ana);
   expect(trial.statusCode).toBe(201);
@@ -171,25 +274,36 @@ test('the simulated trial lifts the limit for seven days and can be used once', 
   expect((await call('POST', '/api/plan/trial', ana)).statusCode).toBe(409);
 
   clock = new Date('2026-10-23T10:00:00Z');
-  const again = (await call('POST', '/api/auth/login', undefined, { email: 'ana@exemplo.pt', password: PASSWORD })).cookies[0].value;
-  expect((await call('GET', '/api/plan', { np_session: again })).json().plan.status).toEqual({ kind: 'teste-terminado' });
-  expect((await call('POST', '/api/posts', { np_session: again }, post)).statusCode).toBe(403);
-  expect((await call('DELETE', '/api/plan/trial', { np_session: again })).json().plan.status).toEqual({ kind: 'gratuito' });
-  expect((await call('POST', '/api/plan/trial', { np_session: again })).statusCode).toBe(409);
+  ana = await signIn('ana@exemplo.pt');
+  expect((await call('GET', '/api/plan', ana)).json().plan.status).toEqual({ kind: 'teste-terminado' });
+  expect((await call('POST', '/api/posts', ana, post)).statusCode).toBe(403);
+  const ended = (await call('DELETE', '/api/plan/trial', ana)).json().plan;
+  expect(ended.status).toEqual({ kind: 'gratuito' });
+  expect(ended.trialStartedAt).toBeTruthy();
+  expect((await call('POST', '/api/plan/trial', ana)).statusCode).toBe(409);
 });
 
 test('quote numbers are assigned by the server, in sequence, per account', async () => {
   const ana = await signUp('ana@exemplo.pt');
   const bea = await signUp('bea@exemplo.pt');
-  const first = await call('POST', '/api/quotes', ana, quote);
-  expect(first.json().quote).toMatchObject({ number: '2026-001', totalCents: 12550 });
+  const id = randomUUID();
+  const first = await call('POST', '/api/quotes', ana, { ...quote, id });
+  expect(first.json().quote).toMatchObject({ id, number: '2026-001', totalCents: 12550 });
+  expect((await call('POST', '/api/quotes', ana, { ...quote, id })).statusCode).toBe(409);
   expect((await call('POST', '/api/quotes', ana, quote)).json().quote.number).toBe('2026-002');
   expect((await call('POST', '/api/quotes', bea, quote)).json().quote.number).toBe('2026-001');
   expect((await call('POST', '/api/quotes', ana, { ...quote, number: '1999-999' })).statusCode).toBe(400);
   expect((await call('POST', '/api/quotes', ana, { ...quote, items: [] })).statusCode).toBe(400);
   expect((await call('POST', '/api/quotes', ana, { ...quote, items: [{ description: 'x', priceCents: -1 }] })).statusCode).toBe(400);
-  const edited = await call('PUT', `/api/quotes/${first.json().quote.id}`, ana, { ...quote, clientName: 'Ana Silva' });
-  expect(edited.json().quote).toMatchObject({ number: '2026-001', clientName: 'Ana Silva' });
+  const edited = await call('PUT', `/api/quotes/${id}`, ana, { ...quote, clientName: 'Ana Silva', items: [{ description: 'Só isto', priceCents: 100 }] });
+  expect(edited.json().quote).toMatchObject({ number: '2026-001', clientName: 'Ana Silva', totalCents: 100 });
+  expect(await count('quote_items')).toBe(5);
+});
+
+test('quotes created at the same time get different numbers', async () => {
+  const ana = await signUp('ana@exemplo.pt');
+  const numbers = (await Promise.all(Array.from({ length: 5 }, () => call('POST', '/api/quotes', ana, quote)))).map((r) => r.json().quote.number).sort();
+  expect(numbers).toEqual(['2026-001', '2026-002', '2026-003', '2026-004', '2026-005']);
 });
 
 test('calendar entries are validated, filtered by month and updated', async () => {
@@ -200,8 +314,11 @@ test('calendar entries are validated, filtered by month and updated', async () =
   await call('POST', '/api/calendar', ana, { ...entry, date: '2026-11-02' });
   expect((await call('GET', '/api/calendar?month=2026-10', ana)).json().entries).toHaveLength(1);
   expect((await call('GET', '/api/calendar', ana)).json().entries).toHaveLength(2);
-  const patched = await call('PATCH', `/api/calendar/${id}`, ana, { status: 'publicada' });
-  expect(patched.json().entry).toMatchObject({ status: 'publicada', title: entry.title, date: entry.date });
+  const postId = (await call('POST', '/api/posts', ana, post)).json().post.id;
+  const patched = await call('PATCH', `/api/calendar/${id}`, ana, { status: 'publicada', postId });
+  expect(patched.json().entry).toMatchObject({ status: 'publicada', title: entry.title, date: entry.date, postId });
+  await call('DELETE', `/api/posts/${postId}`, ana);
+  expect((await call('GET', '/api/calendar?month=2026-10', ana)).json().entries[0].postId).toBeNull();
 });
 
 test('generated drafts use the saved profile and invent nothing', async () => {
@@ -214,16 +331,39 @@ test('generated drafts use the saved profile and invent nothing', async () => {
   expect((await call('GET', '/api/posts', ana)).json().posts).toEqual([]);
 });
 
+test('example data is flagged, does not use the plan and leaves real records alone', async () => {
+  const ana = await signUp('ana@exemplo.pt');
+  await call('POST', '/api/posts', ana, post);
+  await call('POST', '/api/quotes', ana, quote);
+  const loaded = await call('POST', '/api/demo', ana);
+  expect(loaded.statusCode).toBe(201);
+  const demo = loaded.json();
+  expect(demo.business.isExample).toBe(true);
+  expect(demo.posts.filter((p: { isExample: boolean }) => p.isExample)).toHaveLength(3);
+  expect(demo.entries.every((e: { isExample: boolean }) => e.isExample)).toBe(true);
+  expect(demo.plan.postsUsedThisMonth).toBe(1);
+  await call('POST', '/api/demo', ana);                           // loading twice does not duplicate
+  expect((await call('GET', '/api/posts', ana)).json().posts).toHaveLength(4);
+  expect((await call('POST', '/api/quotes', ana, quote)).json().quote.number).toBe('2026-002');
+
+  const cleared = (await call('DELETE', '/api/demo', ana)).json();
+  expect(cleared.business).toBeNull();
+  expect(cleared.posts).toHaveLength(1);
+  expect(cleared.entries).toEqual([]);
+  expect(cleared.quotes.map((q: { number: string }) => q.number).sort()).toEqual(['2026-001', '2026-002']);
+});
+
 test('deleting the account needs the password and removes every row', async () => {
   const ana = await signUp('ana@exemplo.pt');
   await call('PUT', '/api/business', ana, business);
   await call('POST', '/api/posts', ana, post);
   await call('POST', '/api/quotes', ana, quote);
   await call('POST', '/api/calendar', ana, entry);
+  await call('PUT', '/api/replies', ana, { precos: 'x' });
   await call('POST', '/api/plan/trial', ana);
   expect((await call('DELETE', '/api/account', ana, { password: 'errada' })).statusCode).toBe(401);
   expect((await call('DELETE', '/api/account', ana, { password: PASSWORD })).statusCode).toBe(204);
-  for (const table of ['users', 'sessions', 'businesses', 'posts', 'calendar_entries', 'quotes', 'plans']) {
-    expect((db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n, table).toBe(0);
+  for (const table of ['users', 'sessions', 'email_tokens', 'businesses', 'posts', 'post_usage', 'calendar_entries', 'reply_overrides', 'quotes', 'quote_items', 'plans']) {
+    expect(await count(table), table).toBe(0);
   }
 });

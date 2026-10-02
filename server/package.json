@@ -11,15 +11,17 @@
   },
   "devDependencies": {
     "@types/node": "^24.19.1",
+    "@types/pg": "^8.23.1",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "vitest": "^5.0.3"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@fastify/cookie": "^11.1.2",
     "@fastify/helmet": "^13.1.1",
-    "@fastify/rate-limit": "^11.2.0",
     "fastify": "^5.12.5",
+    "pg": "^8.23.1",
     "zod": "^4.6.5"
   }
 }

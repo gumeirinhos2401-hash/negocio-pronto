@@ -10,6 +10,13 @@ export const credentialsSchema = z.object({
 }).strict();
 
 export const passwordSchema = z.object({ password: z.string().min(1).max(200) }).strict();
+export const loginSchema = credentialsSchema.extend({ password: passwordSchema.shape.password }).strict();
+export const emailSchema = z.object({ email: credentialsSchema.shape.email }).strict();
+export const tokenSchema = z.object({ token: z.string().min(20).max(200) }).strict();
+export const resetSchema = z.object({ token: tokenSchema.shape.token, password: credentialsSchema.shape.password }).strict();
+
+// Records may arrive with an id chosen by the client, so a retried request cannot create a duplicate.
+const optionalId = z.uuid().optional();
 
 export const businessSchema = z.object({
   name: text(80).min(1, 'Indique o nome do negócio.'),
@@ -41,6 +48,7 @@ export const postInputSchema = z.object({
 }).strict();
 
 export const postSchema = postInputSchema.extend({
+  id: optionalId,
   title: text(150),
   caption: text(2200).min(1, 'A legenda não pode ficar vazia.'),
   cta: text(300),
@@ -56,14 +64,15 @@ function isRealDate(value: string): boolean {
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Indique a data no formato AAAA-MM-DD.').refine(isRealDate, 'Essa data não existe.');
 
 export const calendarEntrySchema = z.object({
+  id: optionalId,
   date: dateSchema,
   category: z.enum(['promocao', 'servico', 'bastidores', 'testemunho', 'informacao', 'data-especial']),
   title: text(150).min(1, 'Indique o título.'),
   status: z.enum(['planeada', 'publicada', 'cancelada']),
-  postId: z.string().max(64).nullable(),
+  postId: z.uuid().nullable(),
 }).strict();
 
-export const calendarPatchSchema = calendarEntrySchema.partial().strict();
+export const calendarPatchSchema = calendarEntrySchema.omit({ id: true }).partial().strict();
 
 export const monthQuerySchema = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional() });
 
@@ -74,6 +83,7 @@ export const replyOverridesSchema = z.object({
 }).strict();
 
 export const quoteSchema = z.object({
+  id: optionalId,
   clientName: text(100).min(1, 'Indique o nome do cliente.'),
   items: z.array(z.object({
     description: text(200).min(1, 'Indique a descrição do serviço.'),
