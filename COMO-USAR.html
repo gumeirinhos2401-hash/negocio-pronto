@@ -43,6 +43,19 @@ npm run dev</pre>
   <li>Definições: "Apagar todos os dados" limpa tudo.</li>
 </ol>
 
+<h2>Backend (API)</h2>
+<p>Fica na pasta <code>server</code>. Ainda não está ligado ao ecrã: a aplicação continua a guardar os dados no navegador.</p>
+<pre>cd C:\Users\gustavo\negocio-pronto
+npm install
+npm run server</pre>
+<p>A API responde em <code>http://127.0.0.1:3001</code>. Teste rápido: abra <code>http://127.0.0.1:3001/api/health</code>.</p>
+<ul>
+  <li><code>npm run test:server</code>: testes da API.</li>
+  <li>Base de dados: ficheiro SQLite em <code>server\data\negocio-pronto.db</code>, criado ao arrancar.</li>
+  <li>Contas com email e palavra-passe. Cada conta só vê os seus dados.</li>
+  <li>Rotas: <code>/api/auth</code>, <code>/api/business</code>, <code>/api/posts</code>, <code>/api/calendar</code>, <code>/api/replies</code>, <code>/api/quotes</code>, <code>/api/plan</code>, <code>/api/export</code>, <code>/api/account</code>.</li>
+</ul>
+
 <h2>O que este protótipo não faz</h2>
 <ul>
   <li>Não publica em Instagram, Facebook, Google nem WhatsApp.</li>
