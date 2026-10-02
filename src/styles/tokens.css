@@ -1,0 +1,45 @@
+:root {
+  /* Palette */
+  --papel: #F4F5F3;
+  --branco: #FFFFFF;
+  --tinta: #18202B;
+  --pedra: #56606B;
+  --linha: #D9DCD8;
+  --azulejo: #1B4DB1;
+  --erro: #B42318;
+  --sucesso: #1F7A4D;
+
+  /* Type */
+  --fonte-titulos: 'Bricolage Grotesque Variable', 'Segoe UI', system-ui, sans-serif;
+  --fonte-texto: 'Instrument Sans Variable', 'Segoe UI', system-ui, sans-serif;
+  --texto-xs: 0.8125rem;
+  --texto-sm: 0.875rem;
+  --texto-base: 1rem;
+  --texto-lg: 1.125rem;
+  --texto-xl: 1.375rem;
+  --texto-2xl: 1.75rem;
+  --texto-3xl: 2.25rem;
+  --texto-4xl: 3rem;
+  --altura-linha: 1.5;
+  --altura-linha-titulos: 1.15;
+
+  /* Spacing */
+  --esp-1: 0.25rem;
+  --esp-2: 0.5rem;
+  --esp-3: 0.75rem;
+  --esp-4: 1rem;
+  --esp-5: 1.5rem;
+  --esp-6: 2rem;
+  --esp-7: 3rem;
+  --esp-8: 4rem;
+
+  /* Shape and layout */
+  --raio-sm: 6px;
+  --raio: 10px;
+  --sombra: 0 1px 2px rgb(24 32 43 / 0.06), 0 8px 24px rgb(24 32 43 / 0.08);
+  --alvo-toque: 44px;
+  --largura-conteudo: 68rem;
+
+  /* Motion, used only in response to a user action */
+  --transicao: 160ms ease-out;
+}
