@@ -68,7 +68,7 @@ export default function Landing() {
             <h1>Publicações, respostas a clientes e orçamentos para o seu pequeno negócio.</h1>
             <p className="inicio__lema">
               Preencha o perfil do negócio uma vez. A Negócio Pronto prepara os textos com esses dados, para rever e copiar.
-              A aplicação não se liga às redes sociais, por isso é você que publica.
+              A aplicação não se liga às redes sociais, por isso a publicação fica sempre do seu lado.
             </p>
             <div className="inicio__acao">
               <ButtonLink to="/painel" variant="primary" className="inicio__comecar">Começar</ButtonLink>

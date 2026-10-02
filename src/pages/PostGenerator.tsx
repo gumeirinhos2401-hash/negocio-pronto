@@ -131,7 +131,7 @@ export default function PostGenerator() {
       <header className="pagina__cabecalho">
         <h1>Publicações</h1>
         <p className="pagina__intro">
-          Escolha o que quer comunicar e receba um texto para rever e copiar. A aplicação prepara o texto. É você que o coloca nas redes sociais.
+          Escolha o que quer comunicar e receba um texto para rever e copiar. A aplicação prepara o texto. Colocá-lo nas redes sociais fica do seu lado.
         </p>
       </header>
 

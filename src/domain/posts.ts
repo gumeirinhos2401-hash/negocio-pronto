@@ -9,11 +9,11 @@ const TEMPLATES: Record<Goal, Record<Tone, Template>> = {
   'divulgar-servico': {
     proximo: {
       title: (s) => `${s}: é connosco`,
-      lines: (s) => [`${s} é um dos serviços que fazemos cá em casa.`, 'Se quiser saber como funciona, fale connosco.'],
+      lines: (s) => [`${s} é uma das coisas que fazemos cá em casa.`, 'Se quiser saber como funciona, fale connosco.'],
     },
     profissional: {
-      title: (s) => `${s}: serviço disponível`,
-      lines: (s) => [`${s} faz parte dos serviços que prestamos.`, 'Estamos disponíveis para esclarecer qualquer dúvida.'],
+      title: (s) => `${s}: disponível`,
+      lines: (s) => [`${s} faz parte do que oferecemos.`, 'Estamos disponíveis para esclarecer qualquer dúvida.'],
     },
     descontraido: {
       title: (s) => `${s}? Tratamos disso`,
@@ -55,7 +55,7 @@ const TEMPLATES: Record<Goal, Record<Tone, Template>> = {
     },
     profissional: {
       title: (s) => `${s}: informação útil`,
-      lines: (s) => [`${s}: deixamos aqui uma nota para quem procura este serviço.`, 'Para mais informações, contacte-nos.'],
+      lines: (s) => [`${s}: deixamos aqui uma nota para quem nos procura.`, 'Para mais informações, contacte-nos.'],
     },
     descontraido: {
       title: (s) => `${s}: dúvidas?`,

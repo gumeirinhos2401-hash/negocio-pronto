@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Negócio Pronto: como executar</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; line-height: 1.55; color: #18202b; background: #f4f5f3; }
+  h1, h2 { line-height: 1.2; }
+  code, pre { font-family: Consolas, monospace; background: #fff; border: 1px solid #d9dcd8; border-radius: 4px; }
+  code { padding: 1px 5px; }
+  pre { padding: 12px; overflow-x: auto; }
+  li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<h1>Negócio Pronto: como executar</h1>
+<p>Protótipo local. Não está publicado na internet. Os dados ficam só no navegador onde a aplicação é aberta.</p>
+
+<h2>Executar</h2>
+<p>No PowerShell:</p>
+<pre>cd C:\Users\gustavo\negocio-pronto
+npm install
+npm run dev</pre>
+<p>Abra o endereço que aparecer no terminal (normalmente <code>http://localhost:5173</code>).</p>
+
+<h2>Outros comandos</h2>
+<ul>
+  <li><code>npm test</code>: testes automáticos.</li>
+  <li><code>npm run typecheck</code>: verificação de tipos TypeScript.</li>
+  <li><code>npm run build</code> e depois <code>npm run preview</code>: versão de produção em <code>http://localhost:4173</code>.</li>
+</ul>
+
+<h2>Roteiro para testar</h2>
+<ol>
+  <li>Página inicial, botão "Começar".</li>
+  <li>No painel, "Ver com dados de exemplo" ou "Preencher o perfil do negócio".</li>
+  <li>Publicações: gerar, editar, copiar e guardar. À sexta tentativa de guardar no mesmo mês aparece o limite do plano gratuito.</li>
+  <li>Calendário: "Sugerir publicações para este mês" e mudar o estado de uma publicação.</li>
+  <li>Respostas: editar e copiar uma resposta.</li>
+  <li>Orçamentos: preencher, guardar e descarregar o PDF.</li>
+  <li>Planos: "Experimentar o Pro" abre o checkout de simulação. Nenhum pagamento existe.</li>
+  <li>Definições: "Apagar todos os dados" limpa tudo.</li>
+</ol>
+
+<h2>O que este protótipo não faz</h2>
+<ul>
+  <li>Não publica em Instagram, Facebook, Google nem WhatsApp.</li>
+  <li>Não cobra nem processa pagamentos.</li>
+  <li>Não tem contas, login nem servidor.</li>
+  <li>Os textos são gerados por modelos de frase fixos, sem inteligência artificial.</li>
+</ul>
+
+<h2>Documentos</h2>
+<ul>
+  <li>Brief: <code>docs\spec.md</code></li>
+  <li>Plano de implementação: <code>docs\superpowers\plans\2026-10-02-negocio-pronto-mvp.md</code></li>
+</ul>
+</body>
+</html>
