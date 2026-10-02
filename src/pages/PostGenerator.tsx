@@ -15,11 +15,11 @@ import { useToast } from '../components/Toast';
 import { useNow } from '../components/useNow';
 import { usePageTitle } from '../components/usePageTitle';
 import { newId } from '../domain/id';
-import { canSavePost, FREE_POST_LIMIT, planStatus, postsUsedThisMonth } from '../domain/plan';
+import { FREE_POST_LIMIT, planStatus } from '../domain/plan';
 import { generatePost } from '../domain/posts';
 import type { Channel, Goal, Post, PostInput, Tone } from '../domain/types';
 import { validatePostInput, type Errors } from '../domain/validation';
-import { useBusiness, usePlan, usePosts } from '../storage/areas';
+import { useBusiness, usePlan, usePosts, usePostsUsedThisMonth } from '../storage/areas';
 import { focusField, focusSoon, formatShortDate } from './format';
 import { CHANNEL_LABELS, GOAL_LABELS, TONE_LABELS, toOptions } from './labels';
 import './PostGenerator.css';
@@ -46,6 +46,7 @@ export default function PostGenerator() {
   const [business] = useBusiness();
   const [posts, setPosts] = usePosts();
   const [plan] = usePlan();
+  const used = usePostsUsedThisMonth();
 
   const serviceNames = [...new Set(business.services.map((s) => s.name.trim()).filter(Boolean))];
   const [channel, setChannel] = useState<Channel>('instagram');
@@ -70,8 +71,7 @@ export default function PostGenerator() {
 
   const now = useNow();
   const status = planStatus(plan, now);
-  const used = postsUsedThisMonth(posts, now);
-  const mayStore = canSavePost(posts, plan, now);
+  const mayStore = status.kind === 'teste' || used < FREE_POST_LIMIT;
   const usesServiceList = serviceNames.length > 0;
   const typing = !usesServiceList || serviceChoice === OTHER;
 
@@ -288,7 +288,7 @@ export default function PostGenerator() {
       </section>
 
       <Dialog open={deleteId !== null} title="Apagar esta publicação?" onClose={() => setDeleteId(null)}>
-        <p>A publicação é apagada deste navegador. Esta ação não pode ser desfeita.</p>
+        <p>A publicação é apagada da sua conta e continua a contar para o limite do mês. Esta ação não pode ser desfeita.</p>
         <div className="dialogo__acoes">
           <Button onClick={() => setDeleteId(null)}>Cancelar</Button>
           <Button variant="danger" onClick={handleDelete}>Apagar publicação</Button>

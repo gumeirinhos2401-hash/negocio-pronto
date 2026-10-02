@@ -11,14 +11,12 @@ import { newId } from '../domain/id';
 import { parseEuros } from '../domain/money';
 import type { BusinessProfile, Service } from '../domain/types';
 import { validateBusiness, type Errors } from '../domain/validation';
-import {
-  addExamples, DEFAULT_ACCENT, EMPTY_BUSINESS, FREE_PLAN, hasExamples, removeExamples,
-  useBusiness, useCalendar, usePlan, usePosts, useQuotes, useReplyOverrides,
-} from '../storage/areas';
-import { HEX_COLOR } from '../storage/guards';
-import { clearAll } from '../storage/store';
+import { DEFAULT_ACCENT, hasExamples, useAccountData, useBusiness, useCalendar, usePosts, useQuotes } from '../storage/areas';
+import { AccountSection } from './AccountSection';
 import { focusField } from './format';
 import './Settings.css';
+
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 interface ServiceDraft { id: string; name: string; price: string }
 type Draft = Omit<BusinessProfile, 'services' | 'isExample'> & { services: ServiceDraft[] };
@@ -69,13 +67,21 @@ export default function Settings() {
   usePageTitle('Definições');
   const toast = useToast();
   const [business, setBusiness] = useBusiness();
-  const [posts, setPosts] = usePosts();
-  const [calendar, setCalendar] = useCalendar();
-  const [quotes, setQuotes] = useQuotes();
-  const [, setReplies] = useReplyOverrides();
-  const [, setPlan] = usePlan();
+  const [posts] = usePosts();
+  const [calendar] = useCalendar();
+  const [quotes] = useQuotes();
+  const account = useAccountData();
 
   const [draft, setDraft] = useState<Draft>(() => toDraft(business));
+  // The form keeps its own copy of the profile. When the server swaps the whole
+  // profile (examples loaded or removed, everything deleted) the form follows.
+  const [shownExample, setShownExample] = useState(business.isExample);
+  const [shownEmpty, setShownEmpty] = useState(business.name === '');
+  if (shownExample !== business.isExample || shownEmpty !== (business.name === '')) {
+    setShownExample(business.isExample);
+    setShownEmpty(business.name === '');
+    setDraft(toDraft(business));
+  }
   const [errors, setErrors] = useState<BusinessErrors>({});
   const [serviceErrors, setServiceErrors] = useState<ServiceErrors>({});
   const [confirm, setConfirm] = useState<'exemplo' | 'tudo' | null>(null);
@@ -133,36 +139,18 @@ export default function Settings() {
     if (setBusiness(next)) toast.show('Definições guardadas');
   };
 
-  const loadExamples = () => {
-    const next = addExamples(areas, new Date());
-    const saved = [setBusiness(next.business), setPosts(next.posts), setCalendar(next.calendar), setQuotes(next.quotes)];
-    setDraft(toDraft(next.business));
-    setErrors({});
-    setServiceErrors({});
+  const loadExamples = async () => {
     setConfirm(null);
-    if (saved.every(Boolean)) toast.show('Dados de exemplo carregados');
+    if (await account.loadExamples()) toast.show('Dados de exemplo carregados');
   };
 
-  const deleteExamples = () => {
-    const next = removeExamples(areas);
-    const saved = [setBusiness(next.business), setPosts(next.posts), setCalendar(next.calendar), setQuotes(next.quotes)];
-    setDraft(toDraft(next.business));
-    if (saved.every(Boolean)) toast.show('Dados de exemplo apagados');
+  const deleteExamples = async () => {
+    if (await account.removeExamples()) toast.show('Dados de exemplo apagados');
   };
 
-  const deleteEverything = () => {
-    setBusiness(EMPTY_BUSINESS);
-    setPosts([]);
-    setCalendar([]);
-    setQuotes([]);
-    setReplies({});
-    setPlan(FREE_PLAN);
-    clearAll();
-    setDraft(toDraft(EMPTY_BUSINESS));
-    setErrors({});
-    setServiceErrors({});
+  const deleteEverything = async () => {
     setConfirm(null);
-    toast.show('Todos os dados foram apagados');
+    if (await account.deleteAllData()) toast.show('Todos os dados foram apagados');
   };
 
   const previewColor = HEX_COLOR.test(draft.accentColor) ? draft.accentColor : DEFAULT_ACCENT;
@@ -291,7 +279,7 @@ export default function Settings() {
       <section className="seccao definicoes__seccao" aria-labelledby="sec-dados">
         <div>
           <h2 className="seccao__titulo" id="sec-dados">Dados</h2>
-          <p className="seccao__texto">Tudo fica guardado só neste navegador. Nada é enviado para fora.</p>
+          <p className="seccao__texto">Os dados ficam guardados na sua conta.</p>
         </div>
         <ul className="lista-linhas definicoes__dados">
           <li>
@@ -314,7 +302,7 @@ export default function Settings() {
           <li>
             <div>
               <h3>Apagar tudo</h3>
-              <p className="secundario">Apaga o perfil, as publicações, o calendário, as respostas e os orçamentos deste navegador.</p>
+              <p className="secundario">Apaga o perfil, as publicações, o calendário, as respostas e os orçamentos. A conta mantém-se.</p>
             </div>
             <Button variant="danger" onClick={() => setConfirm('tudo')}>Apagar todos os dados</Button>
           </li>
@@ -334,14 +322,16 @@ export default function Settings() {
 
       <Dialog open={confirm === 'tudo'} title="Apagar todos os dados?" onClose={() => setConfirm(null)}>
         <p>
-          O perfil, as publicações, o calendário, as respostas, os orçamentos e o plano são apagados deste navegador.
-          Esta ação não pode ser desfeita.
+          O perfil, as publicações, o calendário, as respostas e os orçamentos são apagados da sua conta. A contagem de
+          publicações deste mês mantém-se. Esta ação não pode ser desfeita.
         </p>
         <div className="dialogo__acoes">
           <Button onClick={() => setConfirm(null)}>Cancelar</Button>
           <Button variant="danger" onClick={deleteEverything}>Apagar todos os dados</Button>
         </div>
       </Dialog>
+
+      <AccountSection />
     </>
   );
 }

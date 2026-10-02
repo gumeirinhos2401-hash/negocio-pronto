@@ -299,7 +299,7 @@ export default function Quotes() {
       </section>
 
       <Dialog open={deleteId !== null} title="Apagar este orçamento?" onClose={() => setDeleteId(null)}>
-        <p>O orçamento é apagado deste navegador. Esta ação não pode ser desfeita.</p>
+        <p>O orçamento é apagado da sua conta. Esta ação não pode ser desfeita.</p>
         <div className="dialogo__acoes">
           <Button onClick={() => setDeleteId(null)}>Cancelar</Button>
           <Button variant="danger" onClick={handleDelete}>Apagar orçamento</Button>

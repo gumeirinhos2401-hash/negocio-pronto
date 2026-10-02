@@ -1,3 +1,4 @@
+import { mkdirSync } from 'node:fs';
 import pg from 'pg';
 
 // Every data table carries user_id and every query filters on it, so one
@@ -138,6 +139,7 @@ export async function openPostgres(connectionString: string): Promise<Db> {
 // Node process. No install, same SQL dialect. Without a folder it stays in memory.
 export async function openEmbedded(dataDir?: string): Promise<Db> {
   const { PGlite } = await import('@electric-sql/pglite');
+  if (dataDir) mkdirSync(dataDir, { recursive: true });
   const lite = new PGlite(dataDir);
   await lite.exec(SCHEMA);
   const wrap = (target: { query: (sql: string, params?: unknown[]) => Promise<{ rows: unknown[]; affectedRows?: number }> }): Queryable => ({

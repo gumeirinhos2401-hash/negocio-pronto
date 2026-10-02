@@ -40,8 +40,15 @@ const RESET_TOKEN_MS = 60 * MINUTE_MS;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 class ApiError extends Error {
-  constructor(readonly status: number, readonly code: string, message: string, readonly fields?: Record<string, string>) {
+  readonly status: number;
+  readonly code: string;
+  readonly fields?: Record<string, string>;
+
+  constructor(status: number, code: string, message: string, fields?: Record<string, string>) {
     super(message);
+    this.status = status;
+    this.code = code;
+    this.fields = fields;
   }
 }
 

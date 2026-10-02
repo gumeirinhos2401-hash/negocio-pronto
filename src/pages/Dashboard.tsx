@@ -8,9 +8,9 @@ import { useToast } from '../components/Toast';
 import { useNow } from '../components/useNow';
 import { usePageTitle } from '../components/usePageTitle';
 import { isoDate } from '../domain/dates';
-import { FREE_POST_LIMIT, planStatus, postsUsedThisMonth } from '../domain/plan';
+import { FREE_POST_LIMIT, planStatus } from '../domain/plan';
 import type { CalendarEntry } from '../domain/types';
-import { addExamples, hasExamples, removeExamples, useBusiness, useCalendar, usePlan, usePosts, useQuotes } from '../storage/areas';
+import { hasExamples, useAccountData, useBusiness, useCalendar, usePlan, usePosts, usePostsUsedThisMonth, useQuotes } from '../storage/areas';
 import { formatDayLong, parseIsoDay } from './format';
 import { CATEGORY_LABELS } from './labels';
 import './Dashboard.css';
@@ -36,11 +36,13 @@ const capitalise = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 export default function Dashboard() {
   usePageTitle('Painel');
   const toast = useToast();
-  const [business, setBusiness] = useBusiness();
-  const [posts, setPosts] = usePosts();
-  const [calendar, setCalendar] = useCalendar();
-  const [quotes, setQuotes] = useQuotes();
+  const [business] = useBusiness();
+  const [posts] = usePosts();
+  const [calendar] = useCalendar();
+  const [quotes] = useQuotes();
   const [plan] = usePlan();
+  const used = usePostsUsedThisMonth();
+  const account = useAccountData();
 
   const now = useNow();
   const today = isoDate(now);
@@ -52,16 +54,12 @@ export default function Dashboard() {
     .sort((a, b) => a.date.localeCompare(b.date))[0];
 
   const status = planStatus(plan, now);
-  const used = postsUsedThisMonth(posts, now);
 
-  const saveAreas = (nextAreas: typeof areas) =>
-    [setBusiness(nextAreas.business), setPosts(nextAreas.posts), setCalendar(nextAreas.calendar), setQuotes(nextAreas.quotes)].every(Boolean);
-
-  const loadExamples = () => {
-    if (saveAreas(addExamples(areas, now))) toast.show('Dados de exemplo carregados');
+  const loadExamples = async () => {
+    if (await account.loadExamples()) toast.show('Dados de exemplo carregados');
   };
-  const deleteExamples = () => {
-    if (saveAreas(removeExamples(areas))) toast.show('Dados de exemplo apagados');
+  const deleteExamples = async () => {
+    if (await account.removeExamples()) toast.show('Dados de exemplo apagados');
   };
 
   return (

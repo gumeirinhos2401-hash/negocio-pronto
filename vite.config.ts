@@ -19,6 +19,9 @@ function contentSecurityPolicy(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), contentSecurityPolicy()],
+  // The API runs as a separate process in development; the browser only ever talks to this origin.
+  server: { proxy: { '/api': 'http://127.0.0.1:3001' } },
+  preview: { proxy: { '/api': 'http://127.0.0.1:3001' } },
   build: {
     // Fonts and other assets stay as files, so none becomes a data: URL the policy would block.
     assetsInlineLimit: 0,
@@ -26,6 +29,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
+    globalSetup: ['./tests/api-server.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],
   },
 })

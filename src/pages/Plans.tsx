@@ -7,7 +7,7 @@ import { useNow } from '../components/useNow';
 import { usePageTitle } from '../components/usePageTitle';
 import { formatEuros } from '../domain/money';
 import { FREE_POST_LIMIT, planStatus, PRO_PRICE_CENTS, TRIAL_DAYS } from '../domain/plan';
-import { FREE_PLAN, usePlan } from '../storage/areas';
+import { usePlan } from '../storage/areas';
 import './Plans.css';
 
 const SIMULATION_LABEL = 'Simulação: nenhum pagamento é cobrado';
@@ -21,6 +21,7 @@ export default function Plans() {
 
   const status = planStatus(plan, now);
   const onTrial = status.kind === 'teste';
+  const trialUsed = plan.trialStartedAt !== null && !onTrial;
   const price = formatEuros(PRO_PRICE_CENTS);
 
   const startTrial = () => {
@@ -30,7 +31,7 @@ export default function Plans() {
   };
 
   const endTrial = () => {
-    const saved = setPlan(FREE_PLAN);
+    const saved = setPlan({ tier: 'gratuito', trialStartedAt: plan.trialStartedAt });
     // The button that was pressed is replaced, so focus moves to the plan heading.
     document.getElementById('plano-pro')?.focus();
     if (saved) toast.show('Teste terminado');
@@ -84,6 +85,8 @@ export default function Plans() {
                 <Button onClick={endTrial}>Terminar teste</Button>
               </div>
             </>
+          ) : trialUsed ? (
+            <p className="planos__estado">O teste gratuito já foi usado nesta conta.</p>
           ) : (
             <>
               <div>

@@ -56,7 +56,7 @@ export default function Landing() {
         <div className="inicio__interior inicio__topo-interior">
           <span className="app__marca">Negócio Pronto</span>
           <nav aria-label="Principal">
-            <Link to="/painel" className="inicio__entrar">Abrir o painel</Link>
+            <Link to="/entrar" className="inicio__entrar">Entrar</Link>
           </nav>
         </div>
       </header>
@@ -71,8 +71,8 @@ export default function Landing() {
               A aplicação não se liga às redes sociais, por isso a publicação fica sempre do seu lado.
             </p>
             <div className="inicio__acao">
-              <ButtonLink to="/painel" variant="primary" className="inicio__comecar">Começar</ButtonLink>
-              <p className="secundario pequeno">Sem conta e sem instalação.</p>
+              <ButtonLink to="/criar-conta" variant="primary" className="inicio__comecar">Criar conta</ButtonLink>
+              <p className="secundario pequeno">Gratuito para começar, sem instalação.</p>
             </div>
           </div>
         </section>
@@ -149,7 +149,7 @@ export default function Landing() {
 
       <footer className="inicio__rodape">
         <div className="inicio__interior">
-          <p>A Negócio Pronto guarda os seus dados só neste navegador. Nada é enviado para servidores.</p>
+          <p>Os seus dados ficam guardados na sua conta. Pode apagá-los ou apagar a conta nas definições.</p>
         </div>
       </footer>
     </div>

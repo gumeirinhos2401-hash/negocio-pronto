@@ -1,0 +1,45 @@
+.conta {
+  min-height: 100vh;
+  background: var(--papel);
+}
+
+.conta__topo {
+  background: var(--branco);
+  border-bottom: 1px solid var(--linha);
+  padding: var(--esp-4) var(--esp-5);
+}
+
+.conta__conteudo {
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: var(--esp-7) var(--esp-4) var(--esp-8);
+}
+
+.conta__conteudo h1 {
+  margin-bottom: var(--esp-4);
+}
+
+.conta__conteudo .pagina__intro {
+  margin-bottom: var(--esp-5);
+}
+
+.conta__erro {
+  background: var(--erro-claro);
+  color: var(--erro);
+}
+
+.conta__alternativa {
+  margin-top: var(--esp-6);
+  line-height: 2;
+}
+
+.estado-pagina {
+  max-width: var(--largura-leitura);
+  margin: var(--esp-8) auto;
+  padding: 0 var(--esp-4);
+  color: var(--pedra);
+}
+
+.estado-pagina > * + * {
+  margin-top: var(--esp-4);
+}
