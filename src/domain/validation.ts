@@ -13,7 +13,7 @@ export function isHttpUrl(value: string): boolean {
   }
 }
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 const PHONE = /^\+?[\d\s()-]+$/;
 const LINK_ERROR = 'O link tem de começar por https:// ou http://.';
 

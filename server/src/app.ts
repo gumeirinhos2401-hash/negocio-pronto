@@ -27,7 +27,7 @@ export interface AppOptions {
   appUrl?: string;
   allowedOrigins?: string[];
   secureCookies?: boolean;
-  trustProxy?: boolean;
+  trustProxy?: false | number | string[];
   logger?: boolean;
 }
 
@@ -99,7 +99,10 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: options.logger ? { redact: ['req.headers.cookie', 'req.headers.authorization'] } : false,
     bodyLimit: 100_000,
-    trustProxy: options.trustProxy ?? false,
+    // A hop count becomes "trust the nearest N hops", which is what Fastify's proxy-addr does for a number.
+    trustProxy: typeof options.trustProxy === 'number'
+      ? ((hops: number) => (_address: string, hop: number) => hop < hops)(options.trustProxy)
+      : options.trustProxy ?? false,
   });
   await app.register(helmet);
   await app.register(cookie);
@@ -267,7 +270,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
   app.get('/api/health', async () => ({ ok: true }));
 
-  app.post('/api/auth/register', async (request, reply) => {
+  const small = { bodyLimit: 4096 };
+
+  app.post('/api/auth/register', small, async (request, reply) => {
     await limit(`registo:${request.ip}`, 5, MINUTE_MS);
     const { email, password } = parse(credentialsSchema, request.body);
     const id = randomUUID();
@@ -283,28 +288,31 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     return reply.code(201).setCookie(SESSION_COOKIE, session.token, cookieOptions(session.expires)).send({ user: { id, email, emailVerified: false } });
   });
 
-  app.post('/api/auth/login', async (request, reply) => {
+  app.post('/api/auth/login', small, async (request, reply) => {
     await limit(`entrada:${request.ip}`, 5, MINUTE_MS);
     const { email, password } = parse(loginSchema, request.body);
-    await limit(`entrada-conta:${email}`, 10, 15 * MINUTE_MS);
     const user = (await db.query('SELECT id, password_hash, email_verified_at FROM users WHERE email = $1', [email])).rows[0];
     const valid = await verifyPassword(password, user?.password_hash ?? DUMMY_HASH);
-    if (!user || !valid) throw new ApiError(401, 'credenciais-invalidas', 'Email ou palavra-passe incorretos.');
+    if (!user || !valid) {
+      // Only failures count against the account, so nobody can lock its owner out by guessing.
+      await limit(`entrada-conta:${email}`, 10, 15 * MINUTE_MS);
+      throw new ApiError(401, 'credenciais-invalidas', 'Email ou palavra-passe incorretos.');
+    }
     const session = await startSession(user.id);
     return reply.setCookie(SESSION_COOKIE, session.token, cookieOptions(session.expires))
       .send({ user: { id: user.id, email, emailVerified: user.email_verified_at !== null } });
   });
 
   // Always answers the same way, so it cannot be used to find out which emails have an account.
-  app.post('/api/auth/forgot', async (request, reply) => {
+  app.post('/api/auth/forgot', small, async (request, reply) => {
     await limit(`repor:${request.ip}`, 5, 15 * MINUTE_MS);
     const { email } = parse(emailSchema, request.body);
     const user = (await db.query('SELECT id FROM users WHERE email = $1', [email])).rows[0];
-    if (user) await sendLink(user.id, email, 'repor').catch((error) => request.log.error(error));
+    if (user) void sendLink(user.id, email, 'repor').catch((error) => request.log.error(error));
     return reply.code(204).send();
   });
 
-  app.post('/api/auth/reset', async (request, reply) => {
+  app.post('/api/auth/reset', small, async (request, reply) => {
     await limit(`repor:${request.ip}`, 5, 15 * MINUTE_MS);
     const { token, password } = parse(resetSchema, request.body);
     const userId = await redeem(token, 'repor');
@@ -314,7 +322,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     return reply.code(204).send();
   });
 
-  app.post('/api/auth/verify', async (request, reply) => {
+  app.post('/api/auth/verify', small, async (request, reply) => {
     await limit(`verificar:${request.ip}`, 10, 15 * MINUTE_MS);
     const { token } = parse(tokenSchema, request.body);
     const userId = await redeem(token, 'verificar');
@@ -330,6 +338,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
         : undefined;
       if (!session) throw new ApiError(401, 'sem-sessao', 'Inicie sessão para continuar.');
       request.userId = session.user_id;
+      if (request.method !== 'GET') await limit(`escrita:${session.user_id}`, 120, MINUTE_MS);
     });
 
     api.post('/api/auth/logout', async (request, reply) => {

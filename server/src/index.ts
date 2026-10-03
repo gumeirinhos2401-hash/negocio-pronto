@@ -1,6 +1,7 @@
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildApp } from './app';
+import { parseTrustProxy } from './config';
 import { openEmbedded, openPostgres } from './db';
 import { consoleMailer, missingMailer, resendMailer } from './mail';
 
@@ -22,7 +23,7 @@ const app = await buildApp({
   appUrl: APP_URL,
   allowedOrigins: ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()) ?? (APP_URL ? [APP_URL] : undefined),
   secureCookies: production,
-  trustProxy: process.env.TRUST_PROXY === 'true',
+  trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
 });
 
 // Bound to this machine only unless HOST says otherwise.

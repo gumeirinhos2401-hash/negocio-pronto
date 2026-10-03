@@ -9,7 +9,7 @@ import { focusField } from './format';
 import './Auth.css';
 
 const MIN_PASSWORD = 10;
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
 function AuthLayout({ title, intro, children }: { title: string; intro?: string; children: ReactNode }) {
   return (

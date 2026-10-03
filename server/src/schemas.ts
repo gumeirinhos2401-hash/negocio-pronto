@@ -1,11 +1,15 @@
 import { z } from 'zod';
 import { isHttpUrl } from '../../src/domain/validation';
 
-const text = (max: number) => z.string().trim().max(max);
+// abort: an over-long value fails at once, before any later check sees it.
+const text = (max: number) => z.string().trim().max(max, { abort: true });
+
+// Each part between dots excludes the dot, so the pattern cannot backtrack over the same characters twice.
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 const link = text(300).refine((value) => value === '' || isHttpUrl(value), 'O link tem de começar por https:// ou http://.');
 
 export const credentialsSchema = z.object({
-  email: z.string().trim().toLowerCase().max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Indique um email válido.'),
+  email: z.string().trim().toLowerCase().max(254, { abort: true }).regex(EMAIL_PATTERN, 'Indique um email válido.'),
   password: z.string().min(10, 'A palavra-passe precisa de pelo menos 10 caracteres.').max(200),
 }).strict();
 
@@ -25,7 +29,7 @@ export const businessSchema = z.object({
   description: text(500),
   hours: text(200),
   phone: text(30),
-  email: text(254).refine((value) => value === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), 'Indique um email válido.'),
+  email: text(254).refine((value) => value === '' || EMAIL_PATTERN.test(value), 'Indique um email válido.'),
   address: text(200),
   bookingLink: link,
   instagram: text(100),

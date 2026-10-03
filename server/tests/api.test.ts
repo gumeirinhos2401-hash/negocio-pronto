@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, beforeEach, expect, test } from 'vitest';
+import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import { buildApp } from '../src/app';
+import { parseTrustProxy } from '../src/config';
 import { openEmbedded, type Db } from '../src/db';
 import type { Message } from '../src/mail';
 
@@ -103,6 +104,42 @@ test('one account is locked out after ten wrong passwords, whatever the address'
   }
   expect(codes.slice(0, 10).every((code) => code === 401)).toBe(true);
   expect(codes[10]).toBe(429);
+  // The owner, with the right password, still gets in: guessing cannot lock them out.
+  const owner = await app.inject({ method: 'POST', url: '/api/auth/login', remoteAddress: '10.0.1.1', payload: { email: 'ana@exemplo.pt', password: PASSWORD } });
+  expect(owner.statusCode).toBe(200);
+});
+
+test('email checks stay fast on hostile input', async () => {
+  const hostile = 'a@' + '.'.repeat(4000) + '@';
+  let started = performance.now();
+  expect((await call('POST', '/api/auth/register', undefined, { email: hostile, password: PASSWORD })).statusCode).toBe(400);
+  expect((await call('POST', '/api/auth/login', undefined, { email: 'a@' + '.'.repeat(99_970) + '@', password: 'x' })).statusCode).toBe(413);
+  expect(performance.now() - started).toBeLessThan(500);
+
+  const ana = await signUp('ana@exemplo.pt');
+  started = performance.now();
+  const response = await call('PUT', '/api/business', ana, { ...business, email: 'a@' + '.'.repeat(90_000) + '@' });
+  expect(response.statusCode).toBe(400);
+  expect(performance.now() - started).toBeLessThan(500);
+  const valid = await call('PUT', '/api/business', ana, { ...business, email: 'ola@cafe-central.pt' });
+  expect(valid.statusCode).toBe(200);
+});
+
+test('an account cannot send unlimited changes', async () => {
+  const ana = await signUp('ana@exemplo.pt');
+  const codes = [];
+  for (let i = 0; i < 121; i++) codes.push((await call('PUT', '/api/replies', ana, { precos: `Texto ${i}` })).statusCode);
+  expect(codes.slice(0, 120).every((code) => code === 200)).toBe(true);
+  expect(codes[120]).toBe(429);
+  expect((await call('GET', '/api/replies', ana)).statusCode).toBe(200);
+});
+
+test('TRUST_PROXY never trusts every hop', () => {
+  expect(parseTrustProxy(undefined)).toBe(false);
+  expect(parseTrustProxy('false')).toBe(false);
+  expect(parseTrustProxy('1')).toBe(1);
+  expect(parseTrustProxy('10.0.0.0/8, 192.168.1.10')).toEqual(['10.0.0.0/8', '192.168.1.10']);
+  expect(() => parseTrustProxy('true')).toThrow(/TRUST_PROXY=true/);
 });
 
 test('email confirmation works once and only with a valid link', async () => {
@@ -130,6 +167,7 @@ test('password reset replaces the password, ends every session and the link work
   expect((await call('POST', '/api/auth/forgot', undefined, { email: 'ninguem@exemplo.pt' })).statusCode).toBe(204);
   expect(outbox).toHaveLength(1);                                 // only the confirmation mail: nothing for an unknown email
   expect((await call('POST', '/api/auth/forgot', undefined, { email: 'ana@exemplo.pt' })).statusCode).toBe(204);
+  await vi.waitFor(() => expect(outbox).toHaveLength(2));        // the reply does not wait for the mail
   const token = tokenIn(outbox[1]);
   expect(outbox[1].text).toContain('/#/repor?token=');
 
@@ -144,6 +182,7 @@ test('password reset replaces the password, ends every session and the link work
 test('a reset link expires after one hour', async () => {
   await signUp('ana@exemplo.pt');
   await call('POST', '/api/auth/forgot', undefined, { email: 'ana@exemplo.pt' });
+  await vi.waitFor(() => expect(outbox).toHaveLength(2));
   clock = new Date(clock.getTime() + 61 * 60 * 1000);
   expect((await call('POST', '/api/auth/reset', undefined, { token: tokenIn(outbox[1]), password: 'outra-palavra-passe' })).statusCode).toBe(400);
 });
