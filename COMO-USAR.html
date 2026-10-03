@@ -15,59 +15,47 @@
 </head>
 <body>
 <h1>Negócio Pronto: como executar</h1>
-<p>Protótipo local. Não está publicado na internet. Os dados ficam só no navegador onde a aplicação é aberta.</p>
+<p>Código público em <code>github.com/gumeirinhos2401-hash/negocio-pronto</code>. Ainda não há deploy: a aplicação só corre no teu computador.</p>
 
-<h2>Executar</h2>
-<p>No PowerShell:</p>
-<pre>cd C:\Users\gustavo\negocio-pronto
-npm install
-npm run dev</pre>
-<p>Abra o endereço que aparecer no terminal (normalmente <code>http://localhost:5173</code>).</p>
-
-<h2>Outros comandos</h2>
-<ul>
-  <li><code>npm test</code>: testes automáticos.</li>
-  <li><code>npm run typecheck</code>: verificação de tipos TypeScript.</li>
-  <li><code>npm run build</code> e depois <code>npm run preview</code>: versão de produção em <code>http://localhost:4173</code>.</li>
-</ul>
-
-<h2>Roteiro para testar</h2>
-<ol>
-  <li>Página inicial, botão "Começar".</li>
-  <li>No painel, "Ver com dados de exemplo" ou "Preencher o perfil do negócio".</li>
-  <li>Publicações: gerar, editar, copiar e guardar. À sexta tentativa de guardar no mesmo mês aparece o limite do plano gratuito.</li>
-  <li>Calendário: "Sugerir publicações para este mês" e mudar o estado de uma publicação.</li>
-  <li>Respostas: editar e copiar uma resposta.</li>
-  <li>Orçamentos: preencher, guardar e descarregar o PDF.</li>
-  <li>Planos: "Experimentar o Pro" abre o checkout de simulação. Nenhum pagamento existe.</li>
-  <li>Definições: "Apagar todos os dados" limpa tudo.</li>
-</ol>
-
-<h2>Backend (API)</h2>
-<p>Fica na pasta <code>server</code>. Ainda não está ligado ao ecrã: a aplicação continua a guardar os dados no navegador.</p>
+<h2>Executar (dois terminais)</h2>
+<p>Terminal 1, a API:</p>
 <pre>cd C:\Users\gustavo\negocio-pronto
 npm install
 npm run server</pre>
-<p>A API responde em <code>http://127.0.0.1:3001</code>. Teste rápido: abra <code>http://127.0.0.1:3001/api/health</code>.</p>
+<p>Terminal 2, a aplicação:</p>
+<pre>cd C:\Users\gustavo\negocio-pronto
+npm run dev</pre>
+<p>Abra <code>http://localhost:5173</code> e crie uma conta. A base de dados fica em <code>server\data</code>; não é preciso instalar Postgres.</p>
+<p>Em desenvolvimento os emails não são enviados: a ligação de confirmação e a de recuperar a palavra-passe aparecem no terminal 1.</p>
+
+<h2>Testes</h2>
 <ul>
+  <li><code>npm test</code>: testes do ecrã contra a API real.</li>
   <li><code>npm run test:server</code>: testes da API.</li>
-  <li>Base de dados: ficheiro SQLite em <code>server\data\negocio-pronto.db</code>, criado ao arrancar.</li>
-  <li>Contas com email e palavra-passe. Cada conta só vê os seus dados.</li>
-  <li>Rotas: <code>/api/auth</code>, <code>/api/business</code>, <code>/api/posts</code>, <code>/api/calendar</code>, <code>/api/replies</code>, <code>/api/quotes</code>, <code>/api/plan</code>, <code>/api/export</code>, <code>/api/account</code>.</li>
+  <li><code>npm run e2e</code>: Playwright no navegador (computador e telemóvel), com verificação de acessibilidade.</li>
+  <li>No GitHub, o CI corre tudo a cada push, também com Postgres 17 e scan de segredos.</li>
 </ul>
 
-<h2>O que este protótipo não faz</h2>
+<h2>Roteiro para testar à mão</h2>
+<ol>
+  <li>Criar conta. Ver o painel vazio e "Ver com dados de exemplo".</li>
+  <li>Definições: preencher o perfil e guardar.</li>
+  <li>Publicações: gerar, editar, copiar e guardar. Ao fim de 5 no mês aparece o limite.</li>
+  <li>Calendário: sugerir o mês e mudar um estado.</li>
+  <li>Orçamentos: guardar e descarregar o PDF.</li>
+  <li>Planos: teste Pro simulado (só uma vez por conta).</li>
+  <li>Definições: terminar sessão, recuperar palavra-passe, apagar conta.</li>
+</ol>
+
+<h2>O que não faz</h2>
 <ul>
   <li>Não publica em Instagram, Facebook, Google nem WhatsApp.</li>
-  <li>Não cobra nem processa pagamentos.</li>
-  <li>Não tem contas, login nem servidor.</li>
-  <li>Os textos são gerados por modelos de frase fixos, sem inteligência artificial.</li>
+  <li>Não cobra pagamentos.</li>
+  <li>Não envia emails reais sem configurar <code>RESEND_API_KEY</code> e <code>MAIL_FROM</code>.</li>
+  <li>Textos gerados por modelos de frase fixos, sem IA.</li>
 </ul>
 
-<h2>Documentos</h2>
-<ul>
-  <li>Brief: <code>docs\spec.md</code></li>
-  <li>Plano de implementação: <code>docs\superpowers\plans\2026-10-02-negocio-pronto-mvp.md</code></li>
-</ul>
+<h2>Segurança</h2>
+<p>Relatório do scan do claude-security em <code>CLAUDE-SECURITY-20261003-021954\CLAUDE-SECURITY-RESULTS.md</code> (fica fora do git). Os 5 achados foram corrigidos no commit "fix: address the security scan findings".</p>
 </body>
 </html>
