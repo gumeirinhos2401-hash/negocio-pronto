@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import { buildApp } from '../src/app';
 import { parseTrustProxy } from '../src/config';
-import { openEmbedded, type Db } from '../src/db';
+import { openEmbedded, openPostgres, type Db } from '../src/db';
 import type { Message } from '../src/mail';
 
 let app: FastifyInstance;
@@ -13,7 +13,8 @@ let outbox: Message[];
 
 const mailer = { send: async (message: Message) => { outbox.push(message); } };
 
-beforeAll(async () => { db = await openEmbedded(); });
+// CI runs these tests against a real Postgres server as well (TEST_DATABASE_URL).
+beforeAll(async () => { db = process.env.TEST_DATABASE_URL ? await openPostgres(process.env.TEST_DATABASE_URL) : await openEmbedded(); });
 afterAll(async () => { await db.close(); });
 
 beforeEach(async () => {

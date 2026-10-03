@@ -13,7 +13,7 @@ if (production && !DATABASE_URL) throw new Error('DATABASE_URL is required in pr
 if (production && !APP_URL) throw new Error('APP_URL is required in production.');
 
 // Without DATABASE_URL the server uses an embedded Postgres stored in server/data: nothing to install for development.
-const db = DATABASE_URL ? await openPostgres(DATABASE_URL) : await openEmbedded(resolve(here, '../data/pg'));
+const db = DATABASE_URL ? await openPostgres(DATABASE_URL) : await openEmbedded(process.env.PGLITE_DIR ?? resolve(here, '../data/pg'));
 const mailer = RESEND_API_KEY && MAIL_FROM ? resendMailer(RESEND_API_KEY, MAIL_FROM) : production ? missingMailer : consoleMailer;
 
 const app = await buildApp({

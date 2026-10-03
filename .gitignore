@@ -30,3 +30,8 @@ server/data
 .env
 .env.*
 !.env.example
+
+# End-to-end test runs
+.e2e-data
+test-results
+playwright-report
