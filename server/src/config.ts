@@ -1,3 +1,5 @@
+import { isIP } from 'node:net';
+
 // How far to trust X-Forwarded-For. A plain "true" would trust every hop, so the
 // client could pick its own address and slip past the per-address limits.
 // Accepted: unset or "false" (no proxy), a hop count such as "1", or the proxy
@@ -7,5 +9,16 @@ export function parseTrustProxy(value: string | undefined): false | number | str
   if (text === '' || text === 'false') return false;
   if (text === 'true') throw new Error('TRUST_PROXY=true trusts any client. Set the number of proxy hops (e.g. 1) or the proxy IP/CIDR list.');
   if (/^\d+$/.test(text)) return Number(text);
-  return text.split(',').map((part) => part.trim()).filter(Boolean);
+  const parts = text.split(',').map((part) => part.trim()).filter(Boolean);
+  // The value is left out of the message: a secret pasted here by mistake must not reach the logs.
+  if (!parts.every(isAddressOrRange)) throw new Error('TRUST_PROXY must be "false", a hop count such as 1, or a comma-separated IP/CIDR list.');
+  return parts;
+}
+
+function isAddressOrRange(part: string): boolean {
+  const [address, bits, ...rest] = part.split('/');
+  const version = isIP(address);
+  if (version === 0 || rest.length > 0) return false;
+  if (bits === undefined) return true;
+  return /^\d+$/.test(bits) && Number(bits) <= (version === 4 ? 32 : 128);
 }

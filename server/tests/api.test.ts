@@ -143,6 +143,15 @@ test('TRUST_PROXY never trusts every hop', () => {
   expect(() => parseTrustProxy('true')).toThrow(/TRUST_PROXY=true/);
 });
 
+test('TRUST_PROXY with something that is not an address fails without printing the value', () => {
+  // A secret pasted into the wrong variable must not end up in the logs.
+  const secret = 're_not-a-real-key_123';
+  expect(() => parseTrustProxy(secret)).toThrow(/TRUST_PROXY/);
+  expect(() => parseTrustProxy(secret)).not.toThrow(new RegExp(secret));
+  expect(() => parseTrustProxy('10.0.0.0/8, nonsense')).toThrow(/TRUST_PROXY/);
+  expect(parseTrustProxy('::1, 2001:db8::/32')).toEqual(['::1', '2001:db8::/32']);
+});
+
 test('email confirmation works once and only with a valid link', async () => {
   const ana = await signUp('ana@exemplo.pt');
   expect(outbox[0]).toMatchObject({ to: 'ana@exemplo.pt' });
