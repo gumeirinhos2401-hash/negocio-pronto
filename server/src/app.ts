@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
+import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { z } from 'zod';
 import { demoData } from '../../src/domain/demo';
@@ -29,6 +30,8 @@ export interface AppOptions {
   secureCookies?: boolean;
   trustProxy?: false | number | string[];
   logger?: boolean;
+  /** Folder with the built app (dist). When set, this server delivers the page as well as the API. */
+  staticDir?: string;
 }
 
 const SESSION_COOKIE = 'np_session';
@@ -107,6 +110,17 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(helmet);
   await app.register(cookie);
   app.decorateRequest('userId', '');
+
+  if (options.staticDir) {
+    await app.register(fastifyStatic, { root: options.staticDir });
+    // App routes such as /calendario exist only in the browser, so a reload gets the page.
+    // API paths and missing files keep a real 404.
+    app.setNotFoundHandler((request, reply) => {
+      const path = request.url.split('?')[0];
+      if (request.method === 'GET' && !path.startsWith('/api/') && !path.includes('.')) return reply.sendFile('index.html');
+      return reply.code(404).send({ error: { code: 'nao-encontrado', message: 'Não encontrámos esse endereço.' } });
+    });
+  }
 
   app.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
     if (error instanceof ApiError) {

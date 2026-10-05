@@ -21,7 +21,7 @@ src/          React + TypeScript app (Vite), plain CSS with design tokens
   domain/     pure logic shared with the API: text generators, plan limits, money, validation
   storage/    DataProvider: loads the account once, sends each change to the API
 server/       Fastify API (TypeScript)
-  src/app.ts  routes, sessions, rate limits
+  src/app.ts  routes, sessions, rate limits; in production also delivers the built app (dist)
   src/db.ts   Postgres (pg) in production, embedded PGlite in development and tests
 e2e/          Playwright journeys with axe accessibility checks
 ```
@@ -61,6 +61,12 @@ CI runs all of the above on every push, plus the API tests on Postgres 17, a dep
 ## Configuration
 
 See [`server/.env.example`](server/.env.example). Production needs `DATABASE_URL` and `APP_URL`; email needs `RESEND_API_KEY` and `MAIL_FROM`.
+
+## Deploy
+
+[`render.yaml`](render.yaml) describes one Render web service that builds the app and serves it together with the API,
+so the browser only talks to one origin. The database is an external Postgres (for example Neon);
+set `DATABASE_URL`, `APP_URL`, `RESEND_API_KEY` and `MAIL_FROM` in the Render dashboard.
 
 ## Not in this MVP
 

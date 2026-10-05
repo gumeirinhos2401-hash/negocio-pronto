@@ -24,6 +24,8 @@ const app = await buildApp({
   allowedOrigins: ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()) ?? (APP_URL ? [APP_URL] : undefined),
   secureCookies: production,
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
+  // In production the same server delivers the built app, so browser and API share one origin.
+  staticDir: process.env.STATIC_DIR ?? (production ? resolve(here, '../../dist') : undefined),
 });
 
 // Bound to this machine only unless HOST says otherwise.

@@ -1,0 +1,29 @@
+# Render Blueprint: one web service delivers both the built app (dist) and the API.
+# The database is external (Neon or Supabase); paste its connection string as DATABASE_URL.
+services:
+  - type: web
+    name: negocio-pronto
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start -w server
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      # Render puts one proxy in front of the service.
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
