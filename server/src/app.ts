@@ -107,6 +107,23 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       ? ((hops: number) => (_address: string, hop: number) => hop < hops)(options.trustProxy)
       : options.trustProxy ?? false,
   });
+  // TEMPORARY: shows how the host's proxies forward the client address. Remove after diagnosing.
+  app.addHook('onRequest', async (request) => {
+    if (!request.url.includes('teste-ip')) return;
+    const h = request.headers;
+    request.log.info({
+      ipDiag: {
+        socket: request.socket.remoteAddress,
+        ip: request.ip,
+        ips: request.ips,
+        xForwardedFor: h['x-forwarded-for'],
+        xRealIp: h['x-real-ip'],
+        trueClientIp: h['true-client-ip'],
+        cfConnectingIp: h['cf-connecting-ip'],
+        trustProxy: process.env.TRUST_PROXY,
+      },
+    }, 'ip diagnostics');
+  });
   await app.register(helmet);
   await app.register(cookie);
   app.decorateRequest('userId', '');
