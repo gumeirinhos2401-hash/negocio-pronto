@@ -16,10 +16,12 @@ services:
         value: production
       - key: HOST
         value: 0.0.0.0
-      # Render chains a loopback proxy behind its internal ones (10.0.0.0/8); trusting
-      # only some of them, or a hop count, returned a proxy address instead of the visitor's.
+      # Requests reach the app through three proxies: Cloudflare's edge, Render's internal
+      # proxy (10.x) and a loopback proxy (seen in the logs on 2026-10-05). Trusting exactly
+      # three hops yields the visitor. Trusting all Cloudflare ranges instead would let anyone
+      # spoof the address through a Cloudflare Worker, whose egress is inside those ranges.
       - key: TRUST_PROXY
-        value: 127.0.0.0/8,::1,10.0.0.0/8
+        value: "3"
       - key: DATABASE_URL
         sync: false
       - key: APP_URL
